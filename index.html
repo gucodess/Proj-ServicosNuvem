@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projeto Cloud Dólar | Arquitetura AWS</title>
+    <!-- Tailwind CSS para estilização rápida e moderna -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonte Inter do Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome para os ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            light: '#34d399', // Emerald 400
+                            DEFAULT: '#10b981', // Emerald 500
+                            dark: '#059669', // Emerald 600
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Estilos adicionais personalizados */
+        body {
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc; /* Slate 50 */
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #34d399, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .card-hover {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.2);
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col selection:bg-brand selection:text-white">
+
+    <!-- Header / Navbar -->
+    <header class="w-full bg-slate-900/80 backdrop-blur-md fixed top-0 z-50 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo -->
+                <div class="flex-shrink-0 flex items-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-cloud text-brand text-2xl"></i>
+                    <span class="font-bold text-xl tracking-tight">Cloud<span class="text-brand">Dólar</span></span>
+                </div>
+                
+                <!-- Desktop Menu -->
+                <nav class="hidden md:flex space-x-8">
+                    <a href="#inicio" class="text-slate-300 hover:text-brand transition-colors text-sm font-medium">Início</a>
+                    <a href="#arquitetura" class="text-slate-300 hover:text-brand transition-colors text-sm font-medium">Arquitetura</a>
+                    <a href="#contato" class="text-slate-300 hover:text-brand transition-colors text-sm font-medium">Contato</a>
+                </nav>
+
+                <!-- Mobile menu button (visual only for this prototype) -->
+                <div class="md:hidden flex items-center">
+                    <button class="text-slate-300 hover:text-white focus:outline-none">
+                        <i class="fa-solid fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow pt-20">
+        
+        <!-- Hero Section -->
+        <section id="inicio" class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 flex flex-col items-center text-center">
+            <!-- Background glow effect -->
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-brand-dark/20 rounded-full blur-[120px] -z-10"></div>
+            
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs text-slate-300 mb-8">
+                <span class="flex h-2 w-2 relative">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-light opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-brand"></span>
+                </span>
+                Projeto Acadêmico - Deploy em Nuvem
+            </div>
+            
+            <h1 class="text-4xl md:text-6xl font-bold tracking-tight mb-6 max-w-4xl">
+                Cotação do Dólar em <span class="gradient-text">Tempo Real</span>
+            </h1>
+            
+            <p class="text-lg md:text-xl text-slate-400 max-w-2xl mb-10 leading-relaxed">
+                Uma aplicação web moderna hospedada na AWS. Utilizando instâncias EC2, containers Docker e comunicação isolada via VPC para garantir segurança e performance.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                <a href="#" onclick="alert('No projeto real, este botão redirecionaria para o IP Público da sua EC2 do Frontend (ex: http://IP_DA_EC2:8080).'); return false;" class="px-8 py-4 bg-brand hover:bg-brand-dark text-white rounded-lg font-semibold text-lg transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    Acessar Aplicação Web
+                </a>
+                <a href="#arquitetura" class="px-8 py-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white rounded-lg font-semibold text-lg transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-book"></i>
+                    Ver Arquitetura
+                </a>
+            </div>
+        </section>
+
+        <!-- Features / Architecture Section -->
+        <section id="arquitetura" class="bg-slate-800/50 py-20 border-y border-slate-800">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-bold mb-4">Arquitetura do Projeto</h2>
+                    <p class="text-slate-400 max-w-2xl mx-auto">Critérios técnicos aplicados para atender os requisitos de infraestrutura e conteinerização na nuvem.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    
+                    <!-- Feature 1 -->
+                    <div class="bg-slate-900 border border-slate-700 p-8 rounded-2xl card-hover">
+                        <div class="w-14 h-14 bg-blue-900/50 rounded-xl flex items-center justify-center mb-6 border border-blue-800/50">
+                            <i class="fa-solid fa-network-wired text-2xl text-blue-400"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3">Arquitetura Isolada</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">
+                            O sistema é dividido em Backend e Frontend. Configuração rigorosa de Virtual Private Cloud (VPC) garante que apenas a aplicação Web acesse o servidor da API.
+                        </p>
+                    </div>
+
+                    <!-- Feature 2 -->
+                    <div class="bg-slate-900 border border-slate-700 p-8 rounded-2xl card-hover relative overflow-hidden">
+                        <!-- Destak badge -->
+                        <div class="absolute top-0 right-0 bg-brand text-slate-900 text-xs font-bold px-3 py-1 rounded-bl-lg">Principal</div>
+                        
+                        <div class="w-14 h-14 bg-brand-dark/20 rounded-xl flex items-center justify-center mb-6 border border-brand-dark/30">
+                            <i class="fa-brands fa-docker text-2xl text-brand"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3">Deploy com Docker</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">
+                            Tanto o back-end (porta 25000) quanto o front-end (porta 8080) foram empacotados em containers via Dockerfile, garantindo portabilidade e padronização.
+                        </p>
+                    </div>
+
+                    <!-- Feature 3 -->
+                    <div class="bg-slate-900 border border-slate-700 p-8 rounded-2xl card-hover">
+                        <div class="w-14 h-14 bg-orange-900/30 rounded-xl flex items-center justify-center mb-6 border border-orange-800/50">
+                            <i class="fa-brands fa-aws text-2xl text-orange-400"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3">Hospedagem EC2</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">
+                            Utilização de Máquinas Virtuais (VMs) na infraestrutura AWS EC2. Security Groups configurados para liberar tráfego externo apenas na porta 8080.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer id="contato" class="bg-slate-900 py-12 border-t border-slate-800 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-cloud text-brand"></i>
+                <span class="font-semibold text-slate-300">CloudDólar</span>
+            </div>
+            
+            <p class="text-slate-500 text-sm text-center">
+                Desenvolvido para o Projeto 01 - Deploy de Aplicação Web com Docker em Serviços de Nuvem.
+            </p>
+            
+            <div class="flex gap-4">
+                <a href="#" class="text-slate-400 hover:text-white transition-colors"><i class="fa-brands fa-github text-xl"></i></a>
+                <a href="#" class="text-slate-400 hover:text-white transition-colors"><i class="fa-brands fa-aws text-xl"></i></a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
