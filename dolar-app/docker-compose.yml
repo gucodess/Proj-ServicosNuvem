@@ -1,0 +1,9 @@
+version: '3.8'
+services:
+  frontend:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      # Passamos o IP da EC2 do backend como variável de ambiente
+      - NEXT_PUBLIC_API_URL=http://<35.170.88.0>:25000/api

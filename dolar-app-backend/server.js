@@ -1,86 +1,94 @@
 const express = require('express');
 const cors = require('cors');
-// const { Pool } = require('pg'); // Descomente quando o RDS estiver pronto
+const axios = require('axios');
+const NodeCache = require('node-cache');
 
 const app = express();
-app.use(cors()); // Permite o frontend Next.js acessar
+app.use(cors());
+app.use(express.json());
 
-const PORT = 25000;
+// Cache configurado para 30 segundos
+const cache = new NodeCache({ stdTTL: 30 });
+const BASE_URL = 'https://economia.awesomeapi.com.br';
 
-// Configuração futura do seu RDS (AWS)
-/*
-const pool = new Pool({
-  host: 'seu-endpoint-rds.amazonaws.com',
-  user: 'postgres',
-  password: 'sua-senha',
-  database: 'cotacoes_db',
-  port: 5432,
-});
-*/
-
-// Sistema de Cache simples (30 segundos)
-let cacheCotacoes = { data: null, timestamp: 0 };
-
-// ROTA 1: Múltiplas Moedas (Dólar, Euro, Libra e Bitcoin)
+// 1. Rota de Múltiplas Moedas (Dashboard)
 app.get('/api/cotacoes', async (req, res) => {
-  const agora = Date.now();
-  
-  // Retorna do cache se tiver menos de 30 segundos
-  if (cacheCotacoes.data && (agora - cacheCotacoes.timestamp < 30000)) {
-    return res.json(cacheCotacoes.data);
-  }
+    try {
+        const cacheKey = 'todas-cotacoes';
+        const cachedData = cache.get(cacheKey);
+        
+        if (cachedData) {
+            return res.json(cachedData); // Retorna do cache se existir
+        }
 
-  try {
-    const response = await fetch("https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL,GBP-BRL,BTC-BRL");
-    const data = await response.json();
-    
-    // Atualiza o cache
-    cacheCotacoes = { data, timestamp: agora };
-    
-    // Exemplo de como você salvaria no RDS em background:
-    // pool.query('INSERT INTO historico_diario (moeda, valor) VALUES ($1, $2)', ['USD', data.USDBRL.bid]);
+        const response = await axios.get(`${BASE_URL}/last/USD-BRL,EUR-BRL,GBP-BRL,BTC-BRL`);
+        cache.set(cacheKey, response.data);
+        res.json(response.data);
 
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar cotações' });
-  }
+    } catch (error) {
+        console.error("Erro na rota /api/cotacoes:", error.message);
+        res.status(500).json({ error: 'Falha ao buscar cotações múltiplas. Tente novamente mais tarde.' });
+    }
 });
 
-// ROTA 2: Histórico de 7 dias do Dólar para o Gráfico
+// 2. Rota de Histórico
 app.get('/api/historico', async (req, res) => {
-  try {
-    const response = await fetch("https://economia.awesomeapi.com.br/json/daily/USD-BRL/7");
-    const data = await response.json();
-    
-    // Formata os dados para o gráfico do frontend
-    const historicoFormatado = data.map(item => ({
-      data: new Date(item.timestamp * 1000).toLocaleDateString('pt-BR'),
-      valor: parseFloat(item.bid)
-    })).reverse(); // Inverte para ordem cronológica
+    try {
+        const { moeda = 'USD', dias = '7' } = req.query;
+        const cacheKey = `historico-${moeda}-${dias}`;
+        const cachedData = cache.get(cacheKey);
 
-    res.json(historicoFormatado);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar histórico' });
-  }
+        if (cachedData) {
+            return res.json(cachedData);
+        }
+
+        const response = await axios.get(`${BASE_URL}/json/daily/${moeda}-BRL/${dias}`);
+        cache.set(cacheKey, response.data);
+        res.json(response.data);
+
+    } catch (error) {
+        console.error(`Erro na rota /api/historico para ${req.query.moeda}:`, error.message);
+        res.status(500).json({ error: 'Falha ao buscar o histórico de dias.' });
+    }
 });
 
-// ROTA 3: Calculadora de Conversão
+// 3. Rota de Conversão Segura
 app.get('/api/converter', async (req, res) => {
-  const { moeda, valor } = req.query; // ex: ?moeda=USD&valor=100
-  if (!moeda || !valor) return res.status(400).json({ error: "Parâmetros inválidos" });
+    try {
+        const { moeda, valor } = req.query;
+        
+        if (!moeda || !valor || isNaN(valor)) {
+            return res.status(400).json({ error: 'Parâmetros inválidos. Envie a moeda e um valor numérico.' });
+        }
 
-  try {
-    const response = await fetch(`https://economia.awesomeapi.com.br/last/${moeda}-BRL`);
-    const data = await response.json();
-    const cotacaoAtual = data[`${moeda}BRL`].bid;
-    
-    const valorConvertido = (parseFloat(valor) * parseFloat(cotacaoAtual)).toFixed(2);
-    res.json({ valorConvertido, cotacaoAtual });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro na conversão' });
-  }
+        const cacheKey = `cotacao-${moeda}`;
+        let cotacaoAtual = cache.get(cacheKey);
+
+        if (!cotacaoAtual) {
+            const response = await axios.get(`${BASE_URL}/last/${moeda}-BRL`);
+            const dadosMoeda = response.data[`${moeda}BRL`];
+            
+            if (!dadosMoeda) return res.status(404).json({ error: 'Moeda não encontrada.' });
+            
+            cotacaoAtual = parseFloat(dadosMoeda.bid);
+            cache.set(cacheKey, cotacaoAtual);
+        }
+
+        const valorConvertido = (parseFloat(valor) * cotacaoAtual).toFixed(2);
+        
+        res.json({
+            moedaOriginal: moeda,
+            moedaDestino: 'BRL',
+            valorOriginal: parseFloat(valor),
+            valorConvertido: parseFloat(valorConvertido),
+            taxaUtilizada: cotacaoAtual
+        });
+
+    } catch (error) {
+        console.error("Erro na conversão:", error.message);
+        res.status(500).json({ error: 'Erro interno ao realizar a conversão matemática.' });
+    }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Backend Robusto rodando na porta ${PORT}`);
-});
+const PORT = 3001;
+app.listen(PORT, () => console.log(`Backend rodando na porta ${PORT}`));

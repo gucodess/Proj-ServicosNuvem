@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  backend:
+    build: .
+    ports:
+      - "25000:25000"
+    environment:
+      - DB_HOST=cambio-app-db.c5wyme2m2qvz.us-east-1.rds.amazonaws.com
+      - DB_USER=postgres
+      - DB_PASS=Gustavo1207
+      - DB_NAME=postgres
+      - DB_PORT=5432
