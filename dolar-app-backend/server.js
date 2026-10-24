@@ -8,7 +8,7 @@ app.use(cors());
 app.use(express.json());
 
 // Cache configurado para 30 segundos
-const cache = new NodeCache({ stdTTL: 30 });
+const cache = new NodeCache({ stdTTL: 600 });
 const BASE_URL = 'https://economia.awesomeapi.com.br';
 
 // 1. Rota de Múltiplas Moedas (Dashboard)
