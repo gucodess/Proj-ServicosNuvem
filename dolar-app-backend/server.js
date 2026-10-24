@@ -90,5 +90,5 @@ app.get('/api/converter', async (req, res) => {
     }
 });
 
-const PORT = 3001;
+const PORT = 25000;
 app.listen(PORT, () => console.log(`Backend rodando na porta ${PORT}`));

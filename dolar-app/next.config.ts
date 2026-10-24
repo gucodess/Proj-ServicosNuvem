@@ -1,7 +1,16 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async rewrites() {
+    return [
+      {
+        // Quando o navegador do utilizador chamar /api/...
+        source: '/api/:path*',
+        // O servidor do front-end fará o pedido no back-end via rede privada
+        destination: `${process.env.NEXT_PUBLIC_API_URL}/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

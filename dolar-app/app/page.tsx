@@ -13,7 +13,8 @@ export default function Dashboard() {
   const [calcMoeda, setCalcMoeda] = useState('USD');
   const [resultado, setResultado] = useState<number | null>(null);
 
-  const API_URL = 'http://localhost:3001/api';
+// O navegador fará o pedido para a porta 8080 e o Next.js trata do resto
+  const API_URL = '/api';
 
   useEffect(() => {
     // 1. Busca Cotações Múltiplas
