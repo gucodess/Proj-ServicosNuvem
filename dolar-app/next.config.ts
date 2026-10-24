@@ -4,10 +4,9 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        // Quando o navegador do utilizador chamar /api/...
         source: '/api/:path*',
-        // O servidor do front-end fará o pedido no back-end via rede privada
-        destination: `${process.env.NEXT_PUBLIC_API_URL}/:path*`,
+        // Apontamos diretamente para o IP Privado da EC2 do Back-end
+        destination: 'http://10.0.1.10:25000/api/:path*',
       },
     ];
   },
