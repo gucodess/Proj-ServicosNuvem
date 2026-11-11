@@ -14,15 +14,12 @@ exports.handler = async (event) => {
         };
     }
 
-    console.log("Host recebido:", process.env.DB_HOST);
-    console.log("Tipo da senha recebida:", typeof process.env.DB_PASSWORD);
-
     // 2. Configuração do Client do PostgreSQL (Use variáveis de ambiente na AWS)
     const client = new Client({
         host: process.env.DB_HOST,
         user: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME, // Continua como 'postgres'
+        database: process.env.DB_NAME, // mesmo banco/schema (public) do back-end e da RF-03
         port: 5432,
         ssl: {
             rejectUnauthorized: false
@@ -39,8 +36,8 @@ exports.handler = async (event) => {
                 m.nome,
                 AVG(c.valor_compra) AS media_compra,
                 AVG(c.valor_venda) AS media_venda
-            FROM cambio.cotacao c
-            INNER JOIN cambio.moeda m ON c.moeda_id = m.id
+            FROM cotacao c
+            INNER JOIN moeda m ON c.moeda_id = m.id
             WHERE c.coletado_em >= $1::timestamp 
               AND c.coletado_em <= $2::timestamp
               AND m.codigo = $3

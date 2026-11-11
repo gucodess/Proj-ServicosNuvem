@@ -28,7 +28,7 @@ flowchart LR
 | Endpoint S3 (Gateway) | `vpce-...` | Lambdas nas sub-redes privadas alcançam o S3 |
 | EC2 back-end | `ec2-backend` | Docker, Express :25000, Elastic IP |
 | EC2 front-end | `ec2-frontend` | Docker, Next.js :8080 |
-| RDS | `cambio-pg` | PostgreSQL, banco `cambio`, sem acesso público |
+| RDS | `cambio-pg` | PostgreSQL, banco `postgres` (schema `public`), sem acesso público |
 | Buckets | `cambio-uploads-<seunome>`, `cambio-ingestao-<seunome>` | RF-02 e RF-03 |
 | Lambdas | `processaCotacaoCSV`, `JoinAndGroupByLambda` | RF-03 e RF-04 |
 | API Gateway | `CambioRelatoriosAPI` | REST, stage `prod` |
@@ -60,10 +60,10 @@ flowchart LR
    nunca commite**).
 3. Conectividade: `projeto-vpc`, DB subnet group com `priv-a` e `priv-b`,
    **Public access: No**, SG `rds-ec2-4`.
-4. Additional configuration: Initial database name `cambio`.
+4. Additional configuration: Initial database name `postgres` (padrão). As tabelas ficam no schema `public`.
 5. Após "Available", **anote o Endpoint** (Connectivity & security).
 6. Criar as tabelas: da `ec2-backend` (Passo 5) rode
-   `psql "host=<endpoint> dbname=cambio user=postgres sslmode=require" -f moeda.sql`
+   `psql "host=<endpoint> dbname=postgres user=postgres sslmode=require" -f moeda.sql`
    e depois `-f cotacao.sql` (arquivos na raiz do repositório). A ordem importa: `cotacao`
    tem FK para `moeda`.
 

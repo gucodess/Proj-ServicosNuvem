@@ -1,6 +1,6 @@
 -- =====================================================================
 -- Tabela: cotacao  (lado "N" do relacionamento 1:N com moeda)
--- Banco: cambio (PostgreSQL) - RDS cambio-pg
+-- Banco: postgres, schema public (PostgreSQL) - RDS cambio-pg
 -- Projeto: dolar-app (Servicos em Nuvem - Mackenzie)
 -- =====================================================================
 
