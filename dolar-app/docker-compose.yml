@@ -1,9 +1,9 @@
-version: '3.8'
 services:
   frontend:
     build: .
+    container_name: frontend
     ports:
       - "8080:8080"
-    environment:
-      # Passamos o IP da EC2 do backend como variável de ambiente
-      - NEXT_PUBLIC_API_URL=http://52.20.63.73:25000/api
+    env_file:
+      - .env            # contem BACKEND_URL=http://<IP_PRIVADO_BACKEND>:25000
+    restart: unless-stopped

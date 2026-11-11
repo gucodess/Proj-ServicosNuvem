@@ -2,6 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const NodeCache = require('node-cache');
+const pool = require('./db');
+const crudRoutes = require('./routes/crud');     // RF-01
+const uploadRoutes = require('./routes/upload'); // RF-02
 
 const app = express();
 app.use(cors());
@@ -17,6 +20,34 @@ const getMoedaName = (moeda) => {
     return names[moeda] || moeda;
 };
 
+// A Yahoo deixou de publicar o par BTC-BRL (retorna 404). Para BTC buscamos BTC-USD
+// e convertemos para BRL com USDBRL=X, mantendo o mesmo formato de resposta da Yahoo.
+const YAHOO = 'https://query1.finance.yahoo.com/v8/finance/chart/';
+async function yahooGet(moeda, qs) {
+    if (moeda !== 'BTC') return axios.get(`${YAHOO}${getYahooSymbol(moeda)}?${qs}`);
+    const get = (s) => axios.get(`${YAHOO}${encodeURIComponent(s)}?${qs}`).then(r => r.data.chart.result[0]);
+    const [btc, fx] = await Promise.all([get('BTC-USD'), get('USDBRL=X')]);
+    const fxNow = fx.meta.regularMarketPrice;
+    const fxPrev = fx.meta.chartPreviousClose || fxNow;
+    const fxTs = fx.timestamp || [];
+    const fxClose = (fx.indicators.quote[0].close || []);
+    const fxEm = (ts) => {          // ultima taxa USD/BRL conhecida ate o instante ts
+        let v = fxClose.find(Boolean) || fxNow;
+        fxTs.forEach((t, i) => { if (t <= ts && fxClose[i]) v = fxClose[i]; });
+        return v;
+    };
+    const btcTs = btc.timestamp || [];
+    const result = {
+        meta: {
+            regularMarketPrice: btc.meta.regularMarketPrice * fxNow,
+            chartPreviousClose: btc.meta.chartPreviousClose * fxPrev,
+        },
+        timestamp: btcTs,
+        indicators: { quote: [{ close: (btc.indicators.quote[0].close || []).map((c, i) => c == null ? null : c * fxEm(btcTs[i])) }] },
+    };
+    return { data: { chart: { result: [result] } } };
+}
+
 // 1. Rota de Múltiplas Moedas (Resiliente)
 app.get('/api/cotacoes', async (req, res) => {
     try {
@@ -29,9 +60,8 @@ app.get('/api/cotacoes', async (req, res) => {
 
         // Busca uma a uma. Se uma falhar, o bloco catch isola o erro e o sistema continua.
         for (const moeda of moedas) {
-            const symbol = getYahooSymbol(moeda);
             try {
-                const response = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=1d&interval=1d`);
+                const response = await yahooGet(moeda, `range=1d&interval=1d`);
                 
                 const result = response.data.chart.result[0];
                 const price = result.meta.regularMarketPrice;
@@ -44,7 +74,7 @@ app.get('/api/cotacoes', async (req, res) => {
                     pctChange: pctChange
                 };
             } catch (err) {
-                console.error(`Erro ao buscar ${moeda} (${symbol}):`, err.message);
+                console.error(`Erro ao buscar ${moeda} (${getYahooSymbol(moeda)}):`, err.message);
                 // Preenche com zeros para não quebrar os cards do painel
                 cotacoes[moeda] = {
                     name: getMoedaName(moeda),
@@ -70,9 +100,7 @@ app.get('/api/historico', async (req, res) => {
         const cacheKey = `historico-${moeda}-${dias}`;
         const cachedData = cache.get(cacheKey);
         if (cachedData) return res.json(cachedData);
-
-        const symbol = getYahooSymbol(moeda);
-        const response = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=${dias}d&interval=1d`);
+        const response = await yahooGet(moeda, `range=${dias}d&interval=1d`);
         
         const result = response.data.chart.result[0];
         const timestamps = result.timestamp || [];
@@ -104,8 +132,7 @@ app.get('/api/converter', async (req, res) => {
         let cotacaoAtual = cache.get(cacheKey);
 
         if (!cotacaoAtual) {
-            const symbol = getYahooSymbol(moeda);
-            const response = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=1d&interval=1d`);
+            const response = await yahooGet(moeda, `range=1d&interval=1d`);
             cotacaoAtual = response.data.chart.result[0].meta.regularMarketPrice;
             cache.set(cacheKey, cotacaoAtual);
         }
@@ -126,5 +153,23 @@ app.get('/api/converter', async (req, res) => {
     }
 });
 
-const PORT = 25000;
-app.listen(PORT, () => console.log(`Backend rodando na porta ${PORT} conectado ao Yahoo Finance`));
+// Healthcheck: confirma que o processo esta de pe e que o RDS responde
+app.get(['/health', '/api/health'], async (req, res) => {
+    try {
+        await pool.query('SELECT 1');
+        res.json({ status: 'ok', db: 'ok' });
+    } catch (e) {
+        res.status(503).json({ status: 'erro', db: e.message });
+    }
+});
+
+// RF-01 e RF-02: montadas na raiz (/moedas) e sob /api (/api/moedas),
+// para funcionarem tanto via curl direto quanto pelo proxy /api do front-end
+app.use(crudRoutes);
+app.use('/api', crudRoutes);
+app.use(uploadRoutes);
+app.use('/api', uploadRoutes);
+
+const PORT = Number(process.env.PORT || 25000);
+// 0.0.0.0: aceita conexoes vindas de outras maquinas da VPC (EC2 do front-end)
+app.listen(PORT, '0.0.0.0', () => console.log(`Backend rodando na porta ${PORT} (Yahoo + CRUD RDS + upload S3)`));

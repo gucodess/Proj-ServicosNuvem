@@ -5,6 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 export default function Dashboard() {
   const [cotacoes, setCotacoes] = useState<any>(null);
+  const [erroApi, setErroApi] = useState<string | null>(null);
   const [historico, setHistorico] = useState<any[]>([]);
   const [moedaGrafico, setMoedaGrafico] = useState('USD');
   
@@ -20,7 +21,12 @@ export default function Dashboard() {
     // 1. Busca Cotações Múltiplas com fallback visual
     axios.get(`${API_URL}/cotacoes`)
       .then(res => setCotacoes(res.data))
-      .catch(err => console.error("Erro ao buscar cotações:", err));
+      .catch(err => {
+        console.error("Erro ao buscar cotações:", err);
+        const status = err.response?.status;
+        const msg = err.response?.data?.error;
+        setErroApi(status ? `Erro ${status}${msg ? `: ${msg}` : ''}` : 'Sem resposta do servidor');
+      });
   }, []);
 
   useEffect(() => {
@@ -74,9 +80,15 @@ export default function Dashboard() {
               </span>
             </div>
           )) : (
-            <div className="col-span-4 flex items-center justify-center py-12 text-emerald-400 font-medium animate-pulse">
-              A buscar dados financeiros atualizados...
-            </div>
+            erroApi ? (
+              <div className="col-span-4 flex items-center justify-center py-12 text-red-400 font-medium">
+                Não foi possível carregar as cotações ({erroApi}).
+              </div>
+            ) : (
+              <div className="col-span-4 flex items-center justify-center py-12 text-emerald-400 font-medium animate-pulse">
+                A buscar dados financeiros atualizados...
+              </div>
+            )
           )}
         </div>
 

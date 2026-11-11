@@ -1,15 +1,7 @@
 import type { NextConfig } from 'next';
 
-const nextConfig: NextConfig = {
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        // Apontamos diretamente para o IP Privado da EC2 do Back-end
-        destination: 'http://10.0.1.10:25000/api/:path*',
-      },
-    ];
-  },
-};
+// Sem "rewrites" com IP fixo: a ponte front -> back agora e feita em
+// app/api/[...path]/route.ts, que le BACKEND_URL do ambiente em tempo de execucao.
+const nextConfig: NextConfig = {};
 
 export default nextConfig;

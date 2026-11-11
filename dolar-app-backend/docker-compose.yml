@@ -1,7 +1,9 @@
 services:
   backend:
     build: .
+    container_name: backend
     ports:
       - "25000:25000"
     env_file:
-      - .env
+      - .env            # credenciais ficam so na EC2, fora do Git
+    restart: unless-stopped

@@ -1,4 +1,9 @@
 **/node_modules/
 **/.next/
+
+# Segredos: nunca versionar
 .env
+.env.*
+!.env.example
 *.pem
+*.key
