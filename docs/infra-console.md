@@ -102,7 +102,13 @@ flowchart LR
 ## Passo 6. EC2 front-end
 
 1. Nome `ec2-frontend`, mesma AMI/tipo, sub-rede pública, SG **`Sg-frontend`**.
-2. Mesma instalação de Docker/compose/git do Passo 5, depois:
+2. Mesma instalação de Docker/compose/git do Passo 5. **Crie 2 GB de swap antes do primeiro build**:
+   a t3.micro tem 1 GB de RAM e o `next build` sem swap trava a instância (nem o SSH responde).
+   ```bash
+   sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+   echo '/swapfile swap swap defaults 0 0' | sudo tee -a /etc/fstab
+   ```
+   Depois:
    ```bash
    git clone https://github.com/gucodess/Proj-ServicosNuvem.git && cd Proj-ServicosNuvem/dolar-app
    cp .env.example .env && nano .env      # BACKEND_URL=http://<IP_PRIVADO_BACKEND>:25000

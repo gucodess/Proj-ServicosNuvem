@@ -68,6 +68,7 @@ mudam. Nenhum IP está fixo no código: o único endereço que o sistema usa fic
 | "Erro 404" | Back-end antigo sem a rota pedida | `git pull` + `docker compose up -d --build` no back-end |
 | `/health` com erro de banco | RDS parado ou `.env` do back-end errado | Esperar *Available*; conferir `DB_HOST`/`DB_PASS` |
 | SSH timeout | Seu IP mudou e o SG só libera *My IP* | Editar regra 22 do SG para o IP atual |
+| Build do front trava a EC2 (SSH sem resposta) | t3.micro sem swap | Stop/Start da instância e criar swap (docs/infra-console.md, Passo 6) |
 
 ## Endpoints do back-end
 
